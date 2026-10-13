@@ -321,12 +321,27 @@ function makeRival(i,lv){
   const hue=RIVAL_HUES[i%RIVAL_HUES.length],c=new THREE.Color().setHSL(hue/360,.65,.5).getHex();
   const car=buildCar(c,true,i);scene.add(car.group);
   const spread=(i+1)*1.7;
-  return{car,idx:(N-8-((i+1)*5)+N)%N,pidx:(N-8-((i+1)*5)+N)%N,lap:1,v:0,vs:0,h:0,wA:0,off:((i%2)?1:-1)*(1+i*.28)*2.2+ (Math.random()-.5)*.6,skill:.78+Math.random()*.3,aiV:lv.aiV*DIFFM[SET.diff]*(.9+Math.random()*.25),lat:0,wheelRot:0,dist:0};
+  const off=((i%2)?1:-1)*(1+i*.28)*2.2+(Math.random()-.5)*.6;
+  return{car,idx:(N-8-((i+1)*5)+N)%N,pidx:(N-8-((i+1)*5)+N)%N,lap:1,v:0,vs:0,h:0,wA:0,off,laneOff:off,skill:.78+Math.random()*.3,aiV:lv.aiV*DIFFM[SET.diff]*(.9+Math.random()*.25),lat:0,wheelRot:0,dist:0};
 }
 function stepRival(r,lv,dt){
   const la=Math.min(look.length-1,Math.floor(24+r.aiV*.35));
   let ti=(r.idx+la)%N;const tgt=pts[ti],tn=nor[ti];
-  const aimX=tgt.x+tn.x*r.off,aimZ=tgt.z+tn.z*r.off;
+  // Choose a passing lane when another car is close ahead.
+  let desiredOff=r.off;
+  const playerAhead=(idx-r.idx+N)%N;
+  if(playerAhead>1&&playerAhead<26&&Math.abs(lat-r.off)<4.2){
+    desiredOff=lat>=r.off?r.off-4.2:r.off+4.2;
+  }
+  for(const other of rivals){
+    if(other===r)continue;
+    const gap=(other.idx-r.idx+N)%N;
+    if(gap>1&&gap<20&&Math.abs(other.laneOff-r.laneOff)<3.8){
+      desiredOff=r.laneOff>=0?r.off-4.2:r.off+4.2;
+    }
+  }
+  r.laneOff+=(desiredOff-r.laneOff)*Math.min(1,2.6*dt);
+  const aimX=tgt.x+tn.x*r.laneOff,aimZ=tgt.z+tn.z*r.laneOff;
   const dx=aimX-r.car.group.position.x,dz=aimZ-r.car.group.position.z;
   const desH=Math.atan2(dx,dz);let dh=desH-r.h;dh=((dh+Math.PI)%(2*Math.PI)+2*Math.PI)%(2*Math.PI)-Math.PI;
   r.wA+=(clamp(dh*2.4,-1,1)-r.wA)*Math.min(1,7*dt);
@@ -341,6 +356,40 @@ function stepRival(r,lv,dt){
   r.wheelRot+=r.v*dt/.38;
   r.car.wheels.forEach(w=>{w.spin.rotation.x=r.wheelRot;if(w.front)w.piv.rotation.y=r.wA*.4});
   r.car.tailM.forEach(m=>m.opacity=.35);
+}
+
+// Resolve simple bumper contact between the player and AI cars.
+function resolveCarContacts(){
+  const minGap=3.35,minGap2=minGap*minGap;
+  const pushApart=(a,b,playerA,playerB)=>{
+    let dx=b.x-a.x,dz=b.z-a.z,d2=dx*dx+dz*dz;
+    if(d2>=minGap2)return false;
+    if(d2<.0001){dx=.01;dz=0;d2=dx*dx}
+    const d=Math.sqrt(d2),nx=dx/d,nz=dz/d,overlap=minGap-d;
+    a.x-=nx*overlap*.52;a.z-=nz*overlap*.52;
+    b.x+=nx*overlap*.52;b.z+=nz*overlap*.52;
+    if(playerA){v=Math.sign(v)*Math.max(0,Math.abs(v)-7);vs*=.72}
+    else if(a.rival)a.rival.v=Math.max(0,a.rival.v-5);
+    if(playerB){v=Math.sign(v)*Math.max(0,Math.abs(v)-7);vs*=.72}
+    else if(b.rival)b.rival.v=Math.max(0,b.rival.v-5);
+    return true;
+  };
+  const player={get x(){return x},set x(n){x=n},get z(){return z},set z(n){z=n}};
+  let hit=false;
+  for(const r of rivals){
+    const pos={get x(){return r.car.group.position.x},set x(n){r.car.group.position.x=n},
+      get z(){return r.car.group.position.z},set z(n){r.car.group.position.z=n},rival:r};
+    if(pushApart(player,pos,true,false))hit=true;
+  }
+  for(let i=0;i<rivals.length;i++)for(let j=i+1;j<rivals.length;j++){
+    const a=rivals[i],b=rivals[j];
+    const pa={get x(){return a.car.group.position.x},set x(n){a.car.group.position.x=n},
+      get z(){return a.car.group.position.z},set z(n){a.car.group.position.z=n},rival:a};
+    const pb={get x(){return b.car.group.position.x},set x(n){b.car.group.position.x=n},
+      get z(){return b.car.group.position.z},set z(n){b.car.group.position.z=n},rival:b};
+    pushApart(pa,pb,false,false);
+  }
+  if(hit)nearest();
 }
 
 // ================= LOOP HELPERS =================
@@ -455,6 +504,8 @@ function tick(now){
       spdEl.firstChild.nodeValue=Math.round(Math.abs(v)*3.6);
       grEl.textContent=gear==='D'?'D'+Math.min(6,1+Math.floor(Math.abs(v)/9)):gear;
       rivals.forEach(r=>stepRival(r,lv,dt));
+      resolveCarContacts();
+      player.group.position.set(x,0,z);
       place=computePlace();posEl.firstChild.nodeValue='P'+place;
       drawMini();
     }
