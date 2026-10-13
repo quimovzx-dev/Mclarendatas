@@ -51,7 +51,7 @@ index.html          page markup and HUD/menu elements
 css/style.css       styles
 js/game.js          game logic, levels, AI, audio, controls
 js/car-data.js      car mesh data and texture paths
-assets/textures/    car textures (WebP)
+assetes/textures/   car textures (WebP)
 ```
 
 three.js and the Orbitron / Rajdhani fonts are loaded from CDNs, so the first load needs an internet connection.
@@ -59,6 +59,6 @@ three.js and the Orbitron / Rajdhani fonts are loaded from CDNs, so the first lo
 ## Credits and licensing
 
 - **Code** (`index.html`, `css/`, `js/game.js`): see [LICENSE](LICENSE).
-- **Car model and textures** (`js/car-data.js`, `assets/`): these are third-party assets and are **not** covered by the code license. Add the original author, source and license here before making the repo public.
+- **Car model and textures** (`js/car-data.js`, `assetes/`): these are third-party assets and are **not** covered by the code license. Add the original author, source and license here before making the repo public.
 - three.js is MIT licensed. Orbitron and Rajdhani are SIL Open Font License.
 - This is an unofficial fan project. McLaren and the McLaren logo are trademarks of their respective owners, and this project is not affiliated with or endorsed by McLaren.

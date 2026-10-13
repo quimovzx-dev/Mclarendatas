@@ -347,7 +347,8 @@ function stepRival(r,lv,dt){
 function fmt(t){const m=Math.floor(t/60000),s=(t%60000)/1000;return m+':'+(s<10?'0':'')+s.toFixed(1)}
 function resetRun(lv){
   const j=N-8;idx=j;prevIdx=j;x=pts[j].x;z=pts[j].z;h=Math.atan2(tan[j].x,tan[j].z);v=0;vs=0;steerV=0;wheelAng=0;boost=100;
-  lap=1;place=1;finished=false;gearTo(0);
+  // Every race starts with clean timing and result state.
+  lap=1;lapT0=0;raceT0=0;bestLapT=0;place=1;finished=false;gearTo(0);
   player.group.position.set(x,0,z);player.group.rotation.y=h;
   rivals.forEach(r=>scene.remove(r.car.group));
   rivals=Array.from({length:lv.ai},(_,i)=>makeRival(i,lv));
@@ -360,7 +361,7 @@ function startLevel(i){
   document.body.classList.add('playing');el('menu').classList.remove('show');el('res').classList.remove('show');
   el('lapc').textContent='LAP 1/'+lv.laps;
   const b=best[i];el('best').textContent='BEST LAP '+(b&&b.lap?fmt(b.lap):'–');
-  running=false;cdActive=true;cdN=3;cdTimer=0;el('cd').className='';
+  running=false;cdActive=true;cdN=3;cdTimer=0;el('cd').textContent='';el('cd').className='';
 }
 function endRace(){
   running=false;finished=true;
@@ -429,7 +430,8 @@ function tick(now){
       pads.forEach(p=>{p.cd=Math.max(0,p.cd-dt);const d=(idx-p.i+N)%N;if(p.cd<=0&&(d<6||d>N-6)&&Math.abs(lat)<W/2){boost=100;p.cd=1.6;puff(x,.6,z,0,4,0,0xffcf2e,3,.5,.9,true)}});
       if(prevIdx>N*.9&&idx<N*.1&&v>0){const t=performance.now(),lt=t-lapT0;if(lt>3000){if(!bestLapT||lt<bestLapT)bestLapT=lt;lapT0=t;lap++;
         if(lap>lv.laps){place=computePlace();endRace()}else lapcEl.textContent='LAP '+lap+'/'+lv.laps}}
-      timerEl.textContent=fmt(performance.now()-lapT0);el('best').textContent='BEST LAP '+(bestLapT?fmt(bestLapT):'–');
+      // Main timer is total race time; best-lap timing remains independent.
+      timerEl.textContent=fmt(performance.now()-raceT0);el('best').textContent='BEST LAP '+(bestLapT?fmt(bestLapT):'–');
       player.group.position.set(x,0,z);player.group.rotation.y=h;
       wheelRot+=v*dt/.38;
       player.wheels.forEach(w=>{w.spin.rotation.x=wheelRot;if(w.front)w.piv.rotation.y=steerV*.4});
