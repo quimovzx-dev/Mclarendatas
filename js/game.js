@@ -196,7 +196,7 @@ const inp={l:0,r:0,gas:0,brk:0,hb:0,nit:0},kb={W:0,S:0};
 const WMAX=170;let wheelAng=0,wheelHeld=false,wL=0,wId=-1;
 let gear='D';const GS=['D','N','R'];
 let x=0,z=0,h=0,v=0,vs=0,boost=100,steerV=0,wheelRot=0,idx=0,lat=0,prevIdx=0;
-let lap=1,lapT0=0,raceT0=0,finished=false,place=1,running=false,cdActive=false,tyreWear=0;
+let lap=1,lapT0=0,raceT0=0,finished=false,place=1,running=false,cdActive=false,tyreWear=0,weather='DRY',weatherTimer=35,weatherFxTimer=0;
 let rivals=[];
 const camPos=new THREE.Vector3();
 let AC=null,eng=null,muted=false;
@@ -395,6 +395,7 @@ function resolveCarContacts(){
 // ================= LOOP HELPERS =================
 function fmt(t){const m=Math.floor(t/60000),s=(t%60000)/1000;return m+':'+(s<10?'0':'')+s.toFixed(1)}
 function resetRun(lv){
+  weather=Math.random()<.25?'RAIN':Math.random()<.55?'CLOUDY':'DRY';weatherTimer=35+Math.random()*20;weatherFxTimer=0;el('weatherValue').textContent=weather;document.body.classList.toggle('rainy',weather==='RAIN');
   const j=N-8;idx=j;prevIdx=j;x=pts[j].x;z=pts[j].z;h=Math.atan2(tan[j].x,tan[j].z);v=0;vs=0;steerV=0;wheelAng=0;boost=100;tyreWear=0;el('tyreBar').style.width='0%';el('tyreValue').textContent='100%';
   // Every race starts with clean timing and result state.
   lap=1;lapT0=0;raceT0=0;bestLapT=0;place=1;finished=false;gearTo(0);
@@ -453,7 +454,9 @@ function tick(now){
       const gasE=(R?kb.S:kb.W)||inp.gas,brkE=(R?kb.W:kb.S)||inp.brk;
       const boosting=!!inp.nit&&boost>2&&dir===1;
       gasEl.classList.toggle('on',!!gasE);brkEl.classList.toggle('on',!!brkE);nitEl.classList.toggle('on',boosting);hbEl.classList.toggle('on',!!inp.hb);
-      const al=Math.abs(lat),onT=al<=W/2+1.6,grav=al<=W/2+6.6,maxV=(onT?lv.maxV:grav?lv.maxV*.47:lv.maxV*.3)+(boosting?18:0);
+      weatherTimer-=dt;if(weatherTimer<=0){weather=weather==='RAIN'?'CLOUDY':weather==='CLOUDY'?'DRY':(Math.random()<.65?'RAIN':'CLOUDY');weatherTimer=35+Math.random()*35;el('weatherValue').textContent=weather;document.body.classList.toggle('rainy',weather==='RAIN');}
+      const wet=weather==='RAIN'?0.66:weather==='CLOUDY'?0.92:1;
+      const al=Math.abs(lat),onT=al<=W/2+1.6,grav=al<=W/2+6.6,maxV=((onT?lv.maxV:grav?lv.maxV*.47:lv.maxV*.3)*wet)+(boosting?18:0);
       if(gasE&&dir)v+=dir*(v*dir<0?32:20)*dt;
       if(boosting)v+=26*dt;
       if(brkE)v-=Math.sign(v)*Math.min(Math.abs(v),38*dt);
@@ -471,7 +474,7 @@ function tick(now){
       const load=Math.abs(steerV)*Math.abs(v)/55;
       tyreWear=clamp(tyreWear+(Math.abs(steerV)*Math.abs(v)*.002+(brkE?.45:0)+(inp.hb?1.1:0))*dt,0,100);
       el('tyreBar').style.width=tyreWear+'%';el('tyreValue').textContent=Math.max(0,Math.round(100-tyreWear))+'%';el('tyreCard').classList.toggle('warn',tyreWear>65);
-      let gk=onT?lv.grip:5;gk*=1-tyreWear*.0035;gk-=6*Math.max(0,Math.min(1,(load-.55)/.35));
+      let gk=onT?lv.grip:5;gk*=wet;gk*=1-tyreWear*.0035;gk-=6*Math.max(0,Math.min(1,(load-.55)/.35));
       if(hbk){gk=1.4;v-=Math.sign(v)*Math.min(Math.abs(v),9*dt)}
       vs-=vs*Math.min(1,Math.max(gk,.8)*dt);
       v-=Math.sign(v)*Math.min(Math.abs(v),Math.abs(vs)*.25*dt);

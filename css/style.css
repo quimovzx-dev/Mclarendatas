@@ -86,3 +86,12 @@ h1 small{display:block;font:600 clamp(11px,2.4vh,15px) var(--ft);letter-spacing:
 #tyreBar{height:100%;width:0%;border-radius:4px;background:linear-gradient(90deg,#ffb428,#ff5a00);transition:width .12s linear}
 #tyreCard.warn{border-color:rgba(255,75,55,.8)}
 #tyreCard.warn #tyreValue{color:#ff6b55}
+
+/* Phase 4: dynamic weather feedback */
+#weatherLabel{margin-top:3px;font:700 10px var(--ft);letter-spacing:1.2px;opacity:.85;white-space:nowrap}
+#weatherValue{color:#8df0b0;margin-left:4px}
+body.rainy #weatherValue{color:#7dd3fc}
+#weatherFx{position:fixed;inset:-20%;pointer-events:none;z-index:2;opacity:0;transition:opacity 1.2s;background:repeating-linear-gradient(108deg,transparent 0 18px,rgba(190,220,255,.23) 19px,transparent 21px 36px);background-size:100% 100%;transform:translate3d(0,0,0)}
+body.rainy #weatherFx{opacity:.45;animation:rainSweep .32s linear infinite}
+@keyframes rainSweep{from{background-position:0 0;transform:translate3d(-1%,0,0)}to{background-position:0 70px;transform:translate3d(1%,1%,0)}}
+body.rainy #vig{background:radial-gradient(ellipse at center,rgba(45,75,100,.05) 25%,rgba(5,15,28,.58) 100%)}
