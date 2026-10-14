@@ -196,7 +196,7 @@ const inp={l:0,r:0,gas:0,brk:0,hb:0,nit:0},kb={W:0,S:0};
 const WMAX=170;let wheelAng=0,wheelHeld=false,wL=0,wId=-1;
 let gear='D';const GS=['D','N','R'];
 let x=0,z=0,h=0,v=0,vs=0,boost=100,steerV=0,wheelRot=0,idx=0,lat=0,prevIdx=0;
-let lap=1,lapT0=0,raceT0=0,finished=false,place=1,running=false,cdActive=false;
+let lap=1,lapT0=0,raceT0=0,finished=false,place=1,running=false,cdActive=false,tyreWear=0;
 let rivals=[];
 const camPos=new THREE.Vector3();
 let AC=null,eng=null,muted=false;
@@ -395,7 +395,7 @@ function resolveCarContacts(){
 // ================= LOOP HELPERS =================
 function fmt(t){const m=Math.floor(t/60000),s=(t%60000)/1000;return m+':'+(s<10?'0':'')+s.toFixed(1)}
 function resetRun(lv){
-  const j=N-8;idx=j;prevIdx=j;x=pts[j].x;z=pts[j].z;h=Math.atan2(tan[j].x,tan[j].z);v=0;vs=0;steerV=0;wheelAng=0;boost=100;
+  const j=N-8;idx=j;prevIdx=j;x=pts[j].x;z=pts[j].z;h=Math.atan2(tan[j].x,tan[j].z);v=0;vs=0;steerV=0;wheelAng=0;boost=100;tyreWear=0;el('tyreBar').style.width='0%';el('tyreValue').textContent='100%';
   // Every race starts with clean timing and result state.
   lap=1;lapT0=0;raceT0=0;bestLapT=0;place=1;finished=false;gearTo(0);
   player.group.position.set(x,0,z);player.group.rotation.y=h;
@@ -469,7 +469,9 @@ function tick(now){
       const dh=steerV*1.7*Math.max(-1,Math.min(1,v/8))/(1+Math.abs(v)/45)*dt*(hbk?1.35:1);
       h+=dh;{const c=Math.cos(dh),s=Math.sin(dh),nv=v*c+vs*s;vs=vs*c-v*s;v=nv}
       const load=Math.abs(steerV)*Math.abs(v)/55;
-      let gk=onT?lv.grip:5;gk-=6*Math.max(0,Math.min(1,(load-.55)/.35));
+      tyreWear=clamp(tyreWear+(Math.abs(steerV)*Math.abs(v)*.002+(brkE?.45:0)+(inp.hb?1.1:0))*dt,0,100);
+      el('tyreBar').style.width=tyreWear+'%';el('tyreValue').textContent=Math.max(0,Math.round(100-tyreWear))+'%';el('tyreCard').classList.toggle('warn',tyreWear>65);
+      let gk=onT?lv.grip:5;gk*=1-tyreWear*.0035;gk-=6*Math.max(0,Math.min(1,(load-.55)/.35));
       if(hbk){gk=1.4;v-=Math.sign(v)*Math.min(Math.abs(v),9*dt)}
       vs-=vs*Math.min(1,Math.max(gk,.8)*dt);
       v-=Math.sign(v)*Math.min(Math.abs(v),Math.abs(vs)*.25*dt);
