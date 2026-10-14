@@ -196,7 +196,7 @@ const inp={l:0,r:0,gas:0,brk:0,hb:0,nit:0},kb={W:0,S:0};
 const WMAX=170;let wheelAng=0,wheelHeld=false,wL=0,wId=-1;
 let gear='D';const GS=['D','N','R'];
 let x=0,z=0,h=0,v=0,vs=0,boost=100,steerV=0,wheelRot=0,idx=0,lat=0,prevIdx=0;
-let lap=1,lapT0=0,raceT0=0,finished=false,place=1,running=false,cdActive=false,tyreWear=0,weather='DRY',weatherTimer=35,weatherFxTimer=0;
+let lap=1,lapT0=0,raceT0=0,finished=false,place=1,running=false,cdActive=false,tyreWear=0,weather='DRY',weatherTimer=35,weatherFxTimer=0,compound='MEDIUM';
 let rivals=[];
 const camPos=new THREE.Vector3();
 let AC=null,eng=null,muted=false;
@@ -395,6 +395,7 @@ function resolveCarContacts(){
 // ================= LOOP HELPERS =================
 function fmt(t){const m=Math.floor(t/60000),s=(t%60000)/1000;return m+':'+(s<10?'0':'')+s.toFixed(1)}
 function resetRun(lv){
+  compound='MEDIUM';document.querySelectorAll('[data-compound]').forEach(b=>b.classList.toggle('selected',b.dataset.compound===compound));el('pitMsg').textContent='Choose a compound · stop to pit';
   weather=Math.random()<.25?'RAIN':Math.random()<.55?'CLOUDY':'DRY';weatherTimer=35+Math.random()*20;weatherFxTimer=0;el('weatherValue').textContent=weather;document.body.classList.toggle('rainy',weather==='RAIN');
   const j=N-8;idx=j;prevIdx=j;x=pts[j].x;z=pts[j].z;h=Math.atan2(tan[j].x,tan[j].z);v=0;vs=0;steerV=0;wheelAng=0;boost=100;tyreWear=0;el('tyreBar').style.width='0%';el('tyreValue').textContent='100%';
   // Every race starts with clean timing and result state.
@@ -432,6 +433,24 @@ el('rn').addEventListener('pointerdown',()=>startLevel(Math.min(LV.length-1,leve
 el('rr').addEventListener('pointerdown',()=>startLevel(level));
 el('rm').addEventListener('pointerdown',goMenu);
 let bestLapT=0;
+
+
+// ================= PIT STRATEGY =================
+function chooseCompound(name){
+  compound=name;
+  document.querySelectorAll('[data-compound]').forEach(b=>b.classList.toggle('selected',b.dataset.compound===compound));
+  el('pitMsg').textContent=compound+' TYRES SELECTED';
+}
+document.querySelectorAll('[data-compound]').forEach(b=>b.addEventListener('pointerdown',e=>{e.preventDefault();chooseCompound(b.dataset.compound)}));
+el('pitBtn').addEventListener('pointerdown',e=>{
+  e.preventDefault();
+  if(!running||paused){el('pitMsg').textContent='Pit service available during a race';return}
+  if(Math.abs(v)>12){el('pitMsg').textContent='SLOW DOWN TO 12 KM/H TO PIT';return}
+  tyreWear=0;boost=100;raceT0-=4000;
+  el('tyreBar').style.width='0%';el('tyreValue').textContent='100%';el('bst').style.width='100%';
+  el('tyreCard').classList.remove('warn');
+  el('pitMsg').textContent=compound+' FITTED · +4.0s PIT STOP';
+});
 
 // ================= MAIN LOOP =================
 let prev=performance.now();
@@ -472,9 +491,10 @@ function tick(now){
       const dh=steerV*1.7*Math.max(-1,Math.min(1,v/8))/(1+Math.abs(v)/45)*dt*(hbk?1.35:1);
       h+=dh;{const c=Math.cos(dh),s=Math.sin(dh),nv=v*c+vs*s;vs=vs*c-v*s;v=nv}
       const load=Math.abs(steerV)*Math.abs(v)/55;
-      tyreWear=clamp(tyreWear+(Math.abs(steerV)*Math.abs(v)*.002+(brkE?.45:0)+(inp.hb?1.1:0))*dt,0,100);
+      const wearFactor=compound==='SOFT'?1.5:compound==='WET'?.82:1;
+      tyreWear=clamp(tyreWear+(Math.abs(steerV)*Math.abs(v)*.002+(brkE?.45:0)+(inp.hb?1.1:0))*wearFactor*dt,0,100);
       el('tyreBar').style.width=tyreWear+'%';el('tyreValue').textContent=Math.max(0,Math.round(100-tyreWear))+'%';el('tyreCard').classList.toggle('warn',tyreWear>65);
-      let gk=onT?lv.grip:5;gk*=wet;gk*=1-tyreWear*.0035;gk-=6*Math.max(0,Math.min(1,(load-.55)/.35));
+      let gk=onT?lv.grip:5;gk*=wet;gk*=compound==='SOFT'?1.1:compound==='WET'?(weather==='RAIN'?1.2:.88):1;gk*=1-tyreWear*.0035;gk-=6*Math.max(0,Math.min(1,(load-.55)/.35));
       if(hbk){gk=1.4;v-=Math.sign(v)*Math.min(Math.abs(v),9*dt)}
       vs-=vs*Math.min(1,Math.max(gk,.8)*dt);
       v-=Math.sign(v)*Math.min(Math.abs(v),Math.abs(vs)*.25*dt);
