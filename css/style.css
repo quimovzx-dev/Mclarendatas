@@ -95,3 +95,14 @@ body.rainy #weatherValue{color:#7dd3fc}
 body.rainy #weatherFx{opacity:.45;animation:rainSweep .32s linear infinite}
 @keyframes rainSweep{from{background-position:0 0;transform:translate3d(-1%,0,0)}to{background-position:0 70px;transform:translate3d(1%,1%,0)}}
 body.rainy #vig{background:radial-gradient(ellipse at center,rgba(45,75,100,.05) 25%,rgba(5,15,28,.58) 100%)}
+
+/* Phase 5: compound strategy and pit service */
+#tc{min-width:150px}
+#pitPanel{margin-top:7px;padding:7px;background:rgba(8,10,15,.78);border:1px solid rgba(255,255,255,.16);border-radius:10px;pointer-events:auto;text-shadow:none}
+.pitTitle{font:800 9px var(--fd);letter-spacing:1.3px;color:#f3f4f6;margin-bottom:5px}
+#compoundRow{display:flex;gap:4px}
+#compoundRow button,#pitBtn{border:1px solid rgba(255,255,255,.2);border-radius:5px;background:#20242b;color:#e7e9ee;font:800 9px var(--ft);padding:5px 7px;letter-spacing:.5px}
+#compoundRow button.selected{background:#ff8000;color:#151515;border-color:#ffb15c}
+#pitBtn{width:100%;margin-top:5px;background:#f2f3f5;color:#111;border:0}
+#pitMsg{margin-top:4px;font:600 9px var(--ft);opacity:.78;max-width:210px;white-space:normal}
+@media(max-width:600px){#tc{top:calc(env(safe-area-inset-top,0px) + 7px);padding:5px 8px;min-width:128px}#pitPanel{padding:5px}#compoundRow button{padding:4px 5px;font-size:8px}#pitMsg{font-size:8px;max-width:170px}}
