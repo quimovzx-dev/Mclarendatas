@@ -320,6 +320,7 @@ function buildMenu(){
     wrap.appendChild(c);
   });
 }
+el('startChamp').addEventListener('pointerdown',e=>{e.preventDefault();startChampionship()});
 function goMenu(){running=false;cdActive=false;paused=false;el('pauseOv').classList.remove('show');el('settings').classList.remove('show');document.body.classList.remove('playing');el('menu').classList.add('show');el('res').classList.remove('show');buildMenu()}
 
 // ================= AI =================
