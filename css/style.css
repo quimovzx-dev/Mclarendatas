@@ -77,3 +77,12 @@ h1 small{display:block;font:600 clamp(11px,2.4vh,15px) var(--ft);letter-spacing:
 #kbRows{max-height:32vh;overflow-y:auto;width:min(380px,88vw)}
 .close{position:absolute;top:14px;right:16px}
 @media (orientation:portrait) and (pointer:coarse){#rot{display:flex}}
+
+/* Phase 3: compact tyre telemetry */
+#tyreCard{width:112px;margin:5px auto 0;padding:5px 7px;border:1px solid rgba(255,255,255,.15);border-radius:8px;background:rgba(8,10,15,.55);box-sizing:border-box;transition:border-color .2s}
+.tyreTop{display:flex;justify-content:space-between;gap:6px;font:700 9px var(--ft);letter-spacing:1px;color:#d8dbe2}
+#tyreValue{font:800 10px var(--fd);color:#8df0b0}
+#tyreTrack{height:4px;margin-top:4px;border-radius:4px;background:rgba(255,255,255,.16);overflow:hidden}
+#tyreBar{height:100%;width:0%;border-radius:4px;background:linear-gradient(90deg,#ffb428,#ff5a00);transition:width .12s linear}
+#tyreCard.warn{border-color:rgba(255,75,55,.8)}
+#tyreCard.warn #tyreValue{color:#ff6b55}
