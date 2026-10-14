@@ -186,6 +186,12 @@ let skid=new THREE.InstancedMesh(skGeo,skidMat,SK),si=0,skidAcc=0;scene.add(skid
 
 // ================= STATE / RACE =================
 let level=0,unlocked=parseInt(localStorage.getItem('mf1_unlock')||'0',10)||0;
+let championshipActive=false;
+const CHAMP_KEY='mf1_championship';
+let championship=JSON.parse(localStorage.getItem(CHAMP_KEY)||'null')||{points:0,races:0,history:[]};
+function saveChampionship(){localStorage.setItem(CHAMP_KEY,JSON.stringify(championship));renderChampionship();}
+function renderChampionship(){const e=el('champStandings');if(!e)return;const pts=[25,18,15,12,10,8,6,4,2,1];e.innerHTML='<b>CHAMPIONSHIP STANDINGS</b><div class="champScore">'+championship.points+' <small>PTS</small> · '+championship.races+'/'+LV.length+' RACES</div><div class="champHint">Points: 25 · 18 · 15 · 12 · 10 · 8 · 6 · 4 · 2 · 1</div><div class="champHistory">'+(championship.history.length?championship.history.map((r,i)=>'<span>R'+(i+1)+' · '+LV[r.level].name+' · P'+r.place+' · +'+r.points+' pts</span>').join(''):'Start a championship to begin your season.')+'</div>';}
+function startChampionship(){championship={points:0,races:0,history:[]};championshipActive=true;saveChampionship();startLevel(0);}
 const best=JSON.parse(localStorage.getItem('mf1_best')||'{}');
 const DEFK={left:'KeyA',right:'KeyD',gas:'KeyW',brake:'KeyS',boost:'ShiftLeft',drift:'Space',reset:'KeyT',rear:'KeyV',pause:'KeyP'};
 let SET=JSON.parse(localStorage.getItem('mf1_settings')||'null')||{keys:Object.assign({},DEFK),mouseSteer:false,diff:'normal'};
@@ -304,6 +310,7 @@ renderSettings();
 
 // ================= MENU =================
 function buildMenu(){
+  championshipActive=false;renderChampionship();
   const wrap=el('cards');wrap.innerHTML='';
   LV.forEach((lv,i)=>{
     const locked=i>unlocked,b=best[i];
@@ -417,16 +424,21 @@ function startLevel(i){
 function endRace(){
   running=false;finished=true;
   const lv=LV[level],b=best[level]||{};
+  let seasonLine='';
+  if(championshipActive){const points=[25,18,15,12,10,8,6,4,2,1][Math.max(0,place-1)]||0;championship.points+=points;championship.races++;championship.history.push({level,place,points});saveChampionship();seasonLine='CHAMPIONSHIP: '+championship.points+' PTS · RACE '+championship.races+'/'+LV.length;}
   const won=place<=3,stars=place===1?3:place===2?2:place===3?1:0;
   if(stars>(b.stars||0)||b.stars===undefined)best[level]={stars:Math.max(stars,b.stars||0),lap:Math.min(b.lap||1e12,bestLapT||1e12)};
   else if(bestLapT&&bestLapT<(b.lap||1e12))best[level].lap=bestLapT;
   localStorage.setItem('mf1_best',JSON.stringify(best));
   if(won&&level+1>unlocked&&level+1<LV.length){unlocked=level+1;localStorage.setItem('mf1_unlock',unlocked)}
-  el('rt').textContent=won?'RACE COMPLETE':'RACE OVER';
+  const seasonDone=championshipActive&&championship.races>=LV.length;
+  el('rt').textContent=seasonDone?'CHAMPIONSHIP COMPLETE':won?'RACE COMPLETE':'RACE OVER';
   el('rp').textContent='P'+place;
   el('rs').textContent='★'.repeat(stars)+'☆'.repeat(3-stars);
-  el('rd').textContent=bestLapT?('BEST LAP '+fmt(bestLapT)):'';
-  el('rn').style.display=(won&&level+1<LV.length)?'':'none';
+  el('rd').textContent=[bestLapT?('BEST LAP '+fmt(bestLapT)):'',seasonLine].filter(Boolean).join(' · ');
+  el('rn').textContent=championshipActive?'NEXT CHAMPIONSHIP RACE':'NEXT LEVEL';
+  el('rn').style.display=((championshipActive&&!seasonDone&&level+1<LV.length)||(won&&!championshipActive&&level+1<LV.length))?'':'none';
+  if(seasonDone){const order=championship.history.slice().sort((a,b)=>b.points-a.points);el('rd').textContent='SEASON POINTS '+championship.points+' · '+championship.races+' RACES COMPLETED';championshipActive=false;}
   document.body.classList.remove('playing');el('res').classList.add('show');
 }
 el('rn').addEventListener('pointerdown',()=>startLevel(Math.min(LV.length-1,level+1)));
