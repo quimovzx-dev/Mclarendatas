@@ -445,7 +445,7 @@ document.querySelectorAll('[data-compound]').forEach(b=>b.addEventListener('poin
 el('pitBtn').addEventListener('pointerdown',e=>{
   e.preventDefault();
   if(!running||paused){el('pitMsg').textContent='Pit service available during a race';return}
-  if(Math.abs(v)>12){el('pitMsg').textContent='SLOW DOWN TO 12 KM/H TO PIT';return}
+  if(Math.abs(v)*3.6>12){el('pitMsg').textContent='SLOW DOWN TO 12 KM/H TO PIT';return}
   tyreWear=0;boost=100;raceT0-=4000;
   el('tyreBar').style.width='0%';el('tyreValue').textContent='100%';el('bst').style.width='100%';
   el('tyreCard').classList.remove('warn');
